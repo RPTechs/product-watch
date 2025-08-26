@@ -66,11 +66,12 @@ export async function getProductIdOfLineItems(client, lineItemIds) {
 }
 
 /**
- * Updates multiple Line Items with a new Product description
+ * Updates multiple Line Items with a new Product description,
+ * sending requests in batches of up to 100.
  *
- * @param {Client} client
- * @param {string[]} lineItemIds
- * @param {string} newDescription
+ * @param {Client} client - HubSpot API client
+ * @param {string[]} lineItemIds - List of Line Item IDs
+ * @param {string} newDescription - New description value
  * @returns {Promise<void>}
  */
 export async function updateLineItemsDescription(
@@ -78,12 +79,18 @@ export async function updateLineItemsDescription(
 	lineItemIds,
 	newDescription
 ) {
-	const batchInput = {
-		inputs: lineItemIds.map((id) => ({
-			id,
-			properties: { description: newDescription },
-		})),
-	}
+	const BATCH_SIZE = 100
 
-	await client.crm.lineItems.batchApi.update(batchInput)
+	for (let i = 0; i < lineItemIds.length; i += BATCH_SIZE) {
+		const batchIds = lineItemIds.slice(i, i + BATCH_SIZE)
+
+		const batchInput = {
+			inputs: batchIds.map((id) => ({
+				id,
+				properties: { description: newDescription },
+			})),
+		}
+
+		await client.crm.lineItems.batchApi.update(batchInput)
+	}
 }
